@@ -3,6 +3,17 @@
 #include "scene/scene.h"
 #include "types/list.h"
 
+#include "oscpack/ip/UdpSocket.h"
+
+#define FRAME_IDENT 0x1234
+
+typedef struct Frame {
+	uint16_t ident;
+	uint16_t height, width;
+	uint16_t length;
+	char data[];
+} Frame;
+
 enum ShaderType {
     FRAGMENT = 0,
     VERTEX = 1
@@ -49,6 +60,7 @@ public:
     void                onFileChange( WatchFileList &_files, int _index );
     void                onScreenshot( std::string _file );
     void                onHistogram();
+    void                udpSend();
    
     // Include folders
     List                include_folders;
@@ -67,6 +79,8 @@ public:
     bool                verbose;
     bool                cursor;
     bool                fxaa;
+
+    UdpTransmitSocket*  sendSocket;
 
 private:
     void                _updateBuffers();

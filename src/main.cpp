@@ -103,6 +103,7 @@ void printUsage(char * executableName) {
     std::cerr << "// [-I<include_folder>] - add an include folder to default for #include files" << std::endl;
     std::cerr << "// [-D<define>] - add system #defines directly from the console argument" << std::endl;
     std::cerr << "// [-p <osc_port>] - open OSC listening port" << std::endl;
+    std::cerr << "// [-s <udp_port>] - send frame data to local port" << std::endl;
     std::cerr << "// [-e/-E <command>] - execute command when start. Multiple -e flags can be chained" << std::endl;
     std::cerr << "// [-v/--version] - return glslViewer version" << std::endl;
     std::cerr << "// [--verbose] - turn verbose outputs on" << std::endl;
@@ -694,6 +695,29 @@ int main(int argc, char **argv){
         else if ( argument== "-p" || argument == "--port" ) {
             if(++i < argc)
                 osc_listener.start(toInt(std::string(argv[i])), runCmd);
+            else
+                std::cout << "Argument '" << argument << "' should be followed by an <osc_port>. Skipping argument." << std::endl;
+        }
+        else if ( argument== "-s" || argument == "--send" ) {
+            if(++i < argc) {
+                int port = toInt(std::string(argv[i]));
+                try {
+                    IpEndpointName name(127,0,0,1, port);
+                    sandbox.sendSocket = new UdpTransmitSocket(name);
+                }
+
+                catch(std::exception &e){
+                    std::string what = e.what();
+                    // strip endline as ofLogError already adds one
+                    if (!what.empty() && what.back() == '\n') {
+                        what = what.substr(0, what.size()-1);
+                    }
+                    std::cerr << "Couldn't connect on port " << port << ": " << what << std::endl;
+                    return false;
+                }
+
+                std::cout << "Connected at localhost:" << port << std::endl;
+            }
             else
                 std::cout << "Argument '" << argument << "' should be followed by an <osc_port>. Skipping argument." << std::endl;
         }

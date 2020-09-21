@@ -970,6 +970,9 @@ void Sandbox::renderDone() {
     if (m_histogram)
         onHistogram();
 
+    if (sendSocket != nullptr)
+        udpSend();
+
     m_frame++;
 
     unflagChange();
@@ -1153,6 +1156,33 @@ void Sandbox::onScreenshot(std::string _file) {
         }
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+}
+
+void Sandbox::udpSend() {
+    if ( isGL() && haveChange() ) {
+
+        // Extract pixels
+        glBindFramebuffer(GL_FRAMEBUFFER, m_record_fbo.getId());
+        int w = getWindowWidth();
+        int h = getWindowHeight();
+        int c = 4;
+        int total = w * h * c;
+        unsigned char* pixels = new unsigned char[total];
+        glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        size_t headerSize = offsetof(struct Frame, data);
+        struct Frame *sendFrame = (struct Frame*)malloc(headerSize + total);
+        sendFrame->ident = FRAME_IDENT;
+        sendFrame->height = h;
+        sendFrame->width = w;
+        sendFrame->length = total;
+        memcpy(sendFrame->data, pixels, total);
+
+        sendSocket->Send((const char*)sendFrame, headerSize + total);
+
+        delete[] pixels;
     }
 }
 
